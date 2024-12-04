@@ -46,7 +46,7 @@ local function copy_template_with_buffer(source, dest)
     dest_file:close()
 end
 
-M.preview = function()
+M.refresh = function()
     local source_path = script_root_path()
     local tmp_path = tmpDirForBuffer()
     if vim.fn.isdirectory(tmp_path) == 0 then
@@ -61,11 +61,21 @@ M.preview = function()
     end
     local preview_html = path(tmp_path, 'index.html')
     copy_template_with_buffer(path(source_path, 'index.html'), preview_html)
-    execute('open', preview_html)
+    return preview_html
+end
+
+M.preview = function()
+    vim.api.nvim_create_autocmd('BufWritePost', {
+        group = vim.api.nvim_create_augroup('blogger', { clear = true }),
+        pattern = vim.fn.expand('%:t'),
+        callback = M.refresh,
+    })
+    execute('open', M.refresh())
 end
 
 M.setup = function()
     vim.api.nvim_create_user_command('BloggerPreview', require('blogger').preview, {})
+    vim.api.nvim_create_user_command('BloggerRefresh', require('blogger').refresh, {})
 end
 
 return M
